@@ -174,6 +174,59 @@
             border-color: #667eea;
         }
 
+        .polynomial-input-container {
+            display: none;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 15px;
+            padding: 15px;
+            background: white;
+            border-radius: 10px;
+            border: 2px solid #667eea;
+        }
+
+        .polynomial-input-container.active {
+            display: flex;
+        }
+
+        .polynomial-label {
+            font-weight: 600;
+            color: #333;
+            font-size: 0.95rem;
+        }
+
+        .polynomial-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-family: 'Courier New', monospace;
+            transition: border-color 0.3s ease;
+        }
+
+        .polynomial-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .polynomial-hint {
+            font-size: 0.85rem;
+            color: #666;
+            font-style: italic;
+        }
+
+        .error-message {
+            color: #e74c3c;
+            font-size: 0.9rem;
+            margin-top: 5px;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
         .canvas-container {
             display: flex;
             justify-content: center;
@@ -247,6 +300,14 @@
                 <button class="function-btn active" data-function="exp">e<sup>x</sup></button>
                 <button class="function-btn" data-function="square">x<sup>2</sup></button>
                 <button class="function-btn" data-function="sin">sin(x)</button>
+                <button class="function-btn" data-function="custom">Custom</button>
+            </div>
+
+            <div class="polynomial-input-container" id="polynomialContainer">
+                <label class="polynomial-label" for="polynomialInput">Enter Polynomial (e.g., 2x^3 + 3x^2 - x + 1):</label>
+                <input type="text" id="polynomialInput" class="polynomial-input" placeholder="2x^3 + 3x^2 - x + 1" value="x^2">
+                <p class="polynomial-hint">Format: ax^n + bx^m + ... + c (integer coefficients only)</p>
+                <div class="error-message" id="polynomialError"></div>
             </div>
 
             <div class="interval-container">
@@ -291,24 +352,128 @@
         const intervalDisplayStart = document.getElementById('intervalDisplayStart');
         const intervalDisplayEnd = document.getElementById('intervalDisplayEnd');
         const functionButtons = document.querySelectorAll('.function-btn');
+        const polynomialContainer = document.getElementById('polynomialContainer');
+        const polynomialInput = document.getElementById('polynomialInput');
+        const polynomialError = document.getElementById('polynomialError');
 
         let currentFunction = 'exp';
         let numRectangles = 10;
         let intervalStart = 0;
         let intervalEnd = 1;
+        let customPolynomial = null;
+
+        // Parse polynomial string into coefficients
+        function parsePolynomial(polyStr) {
+            try {
+                // Remove all spaces
+                let str = polyStr.replace(/\s+/g, '');
+                
+                // Handle empty string
+                if (!str || str.trim() === '') {
+                    throw new Error('Polynomial cannot be empty');
+                }
+
+                // Initialize coefficients object: { exponent: coefficient }
+                const coeffs = {};
+                
+                // Split by + and - but keep the operators
+                // This regex splits while preserving delimiters
+                const terms = str.split(/(?=[+-])/);
+                
+                // If first term doesn't start with + or -, add +
+                if (terms[0] && terms[0][0] !== '+' && terms[0][0] !== '-') {
+                    terms[0] = '+' + terms[0];
+                }
+
+                let hasValidTerm = false;
+
+                for (let term of terms) {
+                    if (!term) continue;
+                    
+                    // Extract sign
+                    const sign = term[0] === '-' ? -1 : 1;
+                    term = term.substring(1); // Remove sign
+                    
+                    if (!term) continue; // Skip empty terms
+                    
+                    // Check if term contains x
+                    const xIndex = term.indexOf('x');
+                    
+                    if (xIndex === -1) {
+                        // Constant term (no x)
+                        const coeff = parseInt(term, 10);
+                        if (isNaN(coeff)) {
+                            throw new Error(`Invalid constant term: ${term}`);
+                        }
+                        coeffs[0] = (coeffs[0] || 0) + sign * coeff;
+                        hasValidTerm = true;
+                    } else {
+                        // Term with x
+                        const beforeX = term.substring(0, xIndex);
+                        const afterX = term.substring(xIndex + 1);
+                        
+                        // Parse coefficient
+                        let coeff = 1;
+                        if (beforeX) {
+                            coeff = parseInt(beforeX, 10);
+                            if (isNaN(coeff)) {
+                                throw new Error(`Invalid coefficient: ${beforeX}`);
+                            }
+                        }
+                        
+                        // Parse exponent
+                        let exp = 1;
+                        if (afterX.startsWith('^')) {
+                            const expStr = afterX.substring(1);
+                            exp = parseInt(expStr, 10);
+                            if (isNaN(exp)) {
+                                throw new Error(`Invalid exponent: ${expStr}`);
+                            }
+                        } else if (afterX.length > 0) {
+                            throw new Error(`Unexpected characters after x: ${afterX}`);
+                        }
+                        
+                        coeffs[exp] = (coeffs[exp] || 0) + sign * coeff;
+                        hasValidTerm = true;
+                    }
+                }
+
+                if (!hasValidTerm) {
+                    throw new Error('No valid terms found');
+                }
+
+                return coeffs;
+            } catch (error) {
+                throw new Error('Invalid polynomial format: ' + error.message);
+            }
+        }
+
+        // Create polynomial function from coefficients
+        function createPolynomialFunction(coeffs) {
+            return (x) => {
+                let result = 0;
+                for (const [exp, coeff] of Object.entries(coeffs)) {
+                    const exponent = parseInt(exp, 10);
+                    result += coeff * Math.pow(x, exponent);
+                }
+                return result;
+            };
+        }
 
         // Function definitions
         const functions = {
             exp: (x) => Math.exp(x),
             square: (x) => x * x,
-            sin: (x) => Math.sin(x)
+            sin: (x) => Math.sin(x),
+            custom: null // Will be set dynamically
         };
 
         // Function names for display
         const functionNames = {
             exp: 'e^x',
             square: 'x²',
-            sin: 'sin(x)'
+            sin: 'sin(x)',
+            custom: ''
         };
 
         // Convert linear slider value (0-1000) to logarithmic scale (1-1000)
@@ -378,9 +543,56 @@
                 functionButtons.forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 currentFunction = btn.dataset.function;
+                
+                // Show/hide polynomial input
+                if (currentFunction === 'custom') {
+                    polynomialContainer.classList.add('active');
+                    // Try to parse current input
+                    updateCustomPolynomial();
+                } else {
+                    polynomialContainer.classList.remove('active');
+                    polynomialError.classList.remove('show');
+                }
+                
                 drawGraph();
             });
         });
+
+        // Polynomial input handler
+        polynomialInput.addEventListener('input', () => {
+            if (currentFunction === 'custom') {
+                updateCustomPolynomial();
+            }
+        });
+
+        function updateCustomPolynomial() {
+            const polyStr = polynomialInput.value.trim();
+            polynomialError.classList.remove('show');
+            
+            if (!polyStr) {
+                polynomialError.textContent = 'Please enter a polynomial';
+                polynomialError.classList.add('show');
+                customPolynomial = null;
+                functions.custom = null;
+                return;
+            }
+
+            try {
+                const coeffs = parsePolynomial(polyStr);
+                customPolynomial = createPolynomialFunction(coeffs);
+                functions.custom = customPolynomial;
+                
+                // Update function name for display
+                functionNames.custom = polyStr;
+                
+                drawGraph();
+            } catch (error) {
+                polynomialError.textContent = error.message;
+                polynomialError.classList.add('show');
+                customPolynomial = null;
+                functions.custom = null;
+            }
+        }
 
         function drawGraph() {
             const width = canvas.width;
@@ -395,6 +607,15 @@
             const a = intervalStart;
             const b = intervalEnd;
             const func = functions[currentFunction];
+            
+            if (!func) {
+                // If custom function is not valid, don't draw
+                ctx.fillStyle = '#999';
+                ctx.font = '16px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('Please enter a valid polynomial', width / 2, height / 2);
+                return;
+            }
 
             // Find max and min values for scaling
             let maxY = -Infinity;
@@ -532,7 +753,10 @@
             ctx.fillStyle = '#667eea';
             ctx.font = 'bold 16px sans-serif';
             ctx.textAlign = 'left';
-            ctx.fillText(`f(x) = ${functionNames[currentFunction]}`, padding + 10, padding + 25);
+            const funcLabel = currentFunction === 'custom' && functionNames.custom 
+                ? `f(x) = ${functionNames.custom}` 
+                : `f(x) = ${functionNames[currentFunction]}`;
+            ctx.fillText(funcLabel, padding + 10, padding + 25);
         }
 
         // Initial interval display
