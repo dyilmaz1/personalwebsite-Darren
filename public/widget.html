@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Riemann Sum Visualizer - Widget</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-weight: 700;
+            text-align: center;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1rem;
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 15px;
+        }
+
+        .function-selector {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .function-btn {
+            padding: 12px 24px;
+            background: white;
+            border: 2px solid #667eea;
+            border-radius: 25px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: #667eea;
+        }
+
+        .function-btn:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .function-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: transparent;
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .slider-label {
+            font-weight: 600;
+            color: #333;
+            min-width: 150px;
+        }
+
+        .slider {
+            flex: 1;
+            min-width: 200px;
+            height: 8px;
+            border-radius: 5px;
+            background: #ddd;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+        }
+
+        .slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+        }
+
+        .slider-value {
+            font-weight: 600;
+            color: #667eea;
+            min-width: 80px;
+            text-align: right;
+        }
+
+        .interval-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .interval-label {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .interval-input-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .interval-input {
+            width: 100px;
+            padding: 8px 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            text-align: center;
+            transition: border-color 0.3s ease;
+        }
+
+        .interval-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .canvas-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        canvas {
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            background: white;
+            max-width: 100%;
+            height: auto;
+        }
+
+        .info {
+            text-align: center;
+            color: #666;
+            font-size: 0.95rem;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 12px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 25px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .back-link:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+
+            .slider-container {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .slider-label,
+            .slider-value {
+                min-width: auto;
+                text-align: left;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Riemann Sum Visualizer</h1>
+        <p class="subtitle">Visualize integration using rectangles</p>
+
+        <div class="controls">
+            <div class="function-selector">
+                <button class="function-btn active" data-function="exp">e<sup>x</sup></button>
+                <button class="function-btn" data-function="square">x<sup>2</sup></button>
+                <button class="function-btn" data-function="sin">sin(x)</button>
+            </div>
+
+            <div class="interval-container">
+                <span class="interval-label">Interval:</span>
+                <div class="interval-input-group">
+                    <label for="intervalStart">a =</label>
+                    <input type="number" id="intervalStart" class="interval-input" value="0" step="0.1">
+                </div>
+                <span style="font-weight: 600; color: #333;">to</span>
+                <div class="interval-input-group">
+                    <label for="intervalEnd">b =</label>
+                    <input type="number" id="intervalEnd" class="interval-input" value="1" step="0.1">
+                </div>
+            </div>
+
+            <div class="slider-container">
+                <label class="slider-label">Number of Rectangles:</label>
+                <input type="range" id="rectanglesSlider" class="slider" min="0" max="1000" value="10">
+                <span class="slider-value" id="rectanglesValue">10</span>
+            </div>
+        </div>
+
+        <div class="canvas-container">
+            <canvas id="graphCanvas" width="800" height="500"></canvas>
+        </div>
+
+        <div class="info">
+            <p>Interval: [<span id="intervalDisplayStart">0</span>, <span id="intervalDisplayEnd">1</span>] | Approximate Area: <span id="areaValue">0.000</span></p>
+        </div>
+
+        <a href="index.html" class="back-link">← Back to Home</a>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('graphCanvas');
+        const ctx = canvas.getContext('2d');
+        const rectanglesSlider = document.getElementById('rectanglesSlider');
+        const rectanglesValue = document.getElementById('rectanglesValue');
+        const areaValue = document.getElementById('areaValue');
+        const intervalStartInput = document.getElementById('intervalStart');
+        const intervalEndInput = document.getElementById('intervalEnd');
+        const intervalDisplayStart = document.getElementById('intervalDisplayStart');
+        const intervalDisplayEnd = document.getElementById('intervalDisplayEnd');
+        const functionButtons = document.querySelectorAll('.function-btn');
+
+        let currentFunction = 'exp';
+        let numRectangles = 10;
+        let intervalStart = 0;
+        let intervalEnd = 1;
+
+        // Function definitions
+        const functions = {
+            exp: (x) => Math.exp(x),
+            square: (x) => x * x,
+            sin: (x) => Math.sin(x)
+        };
+
+        // Function names for display
+        const functionNames = {
+            exp: 'e^x',
+            square: 'x²',
+            sin: 'sin(x)'
+        };
+
+        // Convert linear slider value (0-1000) to logarithmic scale (1-1000)
+        function linearToLogarithmic(linearValue) {
+            // Map 0-1000 to 1-1000 on logarithmic scale
+            // Using log base 10: log10(1) = 0, log10(1000) = 3
+            const minLog = Math.log10(1);
+            const maxLog = Math.log10(1000);
+            const logValue = minLog + (linearValue / 1000) * (maxLog - minLog);
+            return Math.round(Math.pow(10, logValue));
+        }
+
+        // Convert logarithmic value (1-1000) to linear slider value (0-1000)
+        function logarithmicToLinear(logValue) {
+            const minLog = Math.log10(1);
+            const maxLog = Math.log10(1000);
+            const logValueScaled = Math.log10(logValue);
+            return Math.round(((logValueScaled - minLog) / (maxLog - minLog)) * 1000);
+        }
+
+        // Set up slider
+        rectanglesSlider.addEventListener('input', (e) => {
+            numRectangles = linearToLogarithmic(parseInt(e.target.value));
+            rectanglesValue.textContent = numRectangles;
+            drawGraph();
+        });
+
+        // Initialize slider
+        rectanglesSlider.value = logarithmicToLinear(numRectangles);
+        rectanglesValue.textContent = numRectangles;
+
+        // Interval inputs
+        intervalStartInput.addEventListener('input', (e) => {
+            const value = parseFloat(e.target.value);
+            if (!isNaN(value)) {
+                intervalStart = value;
+                if (intervalStart >= intervalEnd) {
+                    intervalEnd = intervalStart + 0.1;
+                    intervalEndInput.value = intervalEnd;
+                }
+                updateIntervalDisplay();
+                drawGraph();
+            }
+        });
+
+        intervalEndInput.addEventListener('input', (e) => {
+            const value = parseFloat(e.target.value);
+            if (!isNaN(value)) {
+                intervalEnd = value;
+                if (intervalEnd <= intervalStart) {
+                    intervalStart = intervalEnd - 0.1;
+                    intervalStartInput.value = intervalStart;
+                }
+                updateIntervalDisplay();
+                drawGraph();
+            }
+        });
+
+        function updateIntervalDisplay() {
+            intervalDisplayStart.textContent = intervalStart.toFixed(2);
+            intervalDisplayEnd.textContent = intervalEnd.toFixed(2);
+        }
+
+        // Function selector
+        functionButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                functionButtons.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentFunction = btn.dataset.function;
+                drawGraph();
+            });
+        });
+
+        function drawGraph() {
+            const width = canvas.width;
+            const height = canvas.height;
+            const padding = 60;
+            const graphWidth = width - 2 * padding;
+            const graphHeight = height - 2 * padding;
+
+            // Clear canvas
+            ctx.clearRect(0, 0, width, height);
+
+            const a = intervalStart;
+            const b = intervalEnd;
+            const func = functions[currentFunction];
+
+            // Find max and min values for scaling
+            let maxY = -Infinity;
+            let minY = Infinity;
+            const step = (b - a) / 1000;
+            for (let x = a; x <= b; x += step) {
+                const y = func(x);
+                maxY = Math.max(maxY, y);
+                minY = Math.min(minY, y);
+            }
+            
+            // Add padding for better visualization
+            const yRange = maxY - minY;
+            maxY += yRange * 0.1;
+            minY -= yRange * 0.1;
+            
+            // Ensure reasonable bounds
+            if (maxY === minY) {
+                maxY = Math.max(Math.abs(maxY), 1) + 1;
+                minY = -Math.max(Math.abs(minY), 1) - 1;
+            }
+
+            // Scale factors
+            const xScale = graphWidth / (b - a);
+            const yScale = graphHeight / (maxY - minY);
+
+            // Draw axes
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+            
+            // Calculate where axes should be drawn
+            const xAxisY = height - padding - (0 - minY) * yScale;
+            const yAxisX = padding - a * xScale;
+            
+            ctx.beginPath();
+            // X-axis (only if it's within the visible range)
+            if (minY <= 0 && maxY >= 0) {
+                ctx.moveTo(padding, xAxisY);
+                ctx.lineTo(width - padding, xAxisY);
+            } else {
+                // Draw at bottom if y-axis doesn't cross
+                ctx.moveTo(padding, height - padding);
+                ctx.lineTo(width - padding, height - padding);
+            }
+            
+            // Y-axis (only if it's within the visible range)
+            if (a <= 0 && b >= 0) {
+                ctx.moveTo(yAxisX, padding);
+                ctx.lineTo(yAxisX, height - padding);
+            } else {
+                // Draw at left if x-axis doesn't cross
+                ctx.moveTo(padding, padding);
+                ctx.lineTo(padding, height - padding);
+            }
+            ctx.stroke();
+
+            // Draw axis labels
+            ctx.fillStyle = '#333';
+            ctx.font = '14px sans-serif';
+            ctx.textAlign = 'center';
+            
+            // X-axis labels
+            ctx.fillText(a.toFixed(2), padding, height - padding + 20);
+            ctx.fillText(b.toFixed(2), width - padding, height - padding + 20);
+            
+            // Y-axis labels
+            ctx.textAlign = 'right';
+            if (minY <= 0 && maxY >= 0) {
+                ctx.fillText('0', padding - 10, xAxisY + 5);
+            }
+            ctx.fillText(maxY.toFixed(2), padding - 10, padding + 5);
+            ctx.fillText(minY.toFixed(2), padding - 10, height - padding + 5);
+
+            // Draw function curve
+            ctx.strokeStyle = '#667eea';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            const curveStep = (b - a) / 1000;
+            let firstPoint = true;
+            for (let x = a; x <= b; x += curveStep) {
+                const y = func(x);
+                const canvasX = padding + (x - a) * xScale;
+                const canvasY = height - padding - (y - minY) * yScale;
+                if (firstPoint) {
+                    ctx.moveTo(canvasX, canvasY);
+                    firstPoint = false;
+                } else {
+                    ctx.lineTo(canvasX, canvasY);
+                }
+            }
+            ctx.stroke();
+
+            // Draw rectangles for Riemann sum
+            const dx = (b - a) / numRectangles;
+            let totalArea = 0;
+
+            ctx.fillStyle = 'rgba(102, 126, 234, 0.3)';
+            ctx.strokeStyle = 'rgba(102, 126, 234, 0.6)';
+            ctx.lineWidth = 1;
+
+            // Determine baseline for rectangles (y = 0 or bottom of graph)
+            const baselineY = minY <= 0 && maxY >= 0 ? 0 : minY;
+            const baselineCanvasY = height - padding - (baselineY - minY) * yScale;
+
+            for (let i = 0; i < numRectangles; i++) {
+                const x = a + i * dx;
+                const y = func(x); // Left Riemann sum
+                const rectWidth = dx * xScale;
+                
+                const canvasX = padding + (x - a) * xScale;
+                const yCanvasY = height - padding - (y - minY) * yScale;
+                
+                // Draw rectangle from baseline to function value
+                if (y >= baselineY) {
+                    // Rectangle above baseline
+                    const rectHeight = (y - baselineY) * yScale;
+                    // yCanvasY is above baselineCanvasY, so draw from yCanvasY (top) down
+                    ctx.fillRect(canvasX, yCanvasY, rectWidth, rectHeight);
+                    ctx.strokeRect(canvasX, yCanvasY, rectWidth, rectHeight);
+                } else {
+                    // Rectangle below baseline (negative area)
+                    // yCanvasY is below baselineCanvasY, so draw from baselineCanvasY down to yCanvasY
+                    const rectHeight = (baselineY - y) * yScale;
+                    ctx.fillRect(canvasX, baselineCanvasY, rectWidth, rectHeight);
+                    ctx.strokeRect(canvasX, baselineCanvasY, rectWidth, rectHeight);
+                }
+
+                totalArea += (y - baselineY) * dx;
+            }
+
+            // Update area display
+            areaValue.textContent = totalArea.toFixed(6);
+
+            // Draw function label
+            ctx.fillStyle = '#667eea';
+            ctx.font = 'bold 16px sans-serif';
+            ctx.textAlign = 'left';
+            ctx.fillText(`f(x) = ${functionNames[currentFunction]}`, padding + 10, padding + 25);
+        }
+
+        // Initial interval display
+        updateIntervalDisplay();
+
+        // Initial draw
+        drawGraph();
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            // Maintain aspect ratio
+            const container = canvas.parentElement;
+            const maxWidth = Math.min(800, container.clientWidth - 40);
+            canvas.width = maxWidth;
+            canvas.height = (maxWidth / 800) * 500;
+            drawGraph();
+        });
+    </script>
+</body>
+</html>
+
