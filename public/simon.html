@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simon Says Memory Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 30px 24px 40px;
+            animation: fadeIn 0.8s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            text-decoration: none;
+            color: #667eea;
+            font-weight: 600;
+            font-size: 0.95rem;
+            padding: 8px 14px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.9);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+            transition: background 0.2s ease, transform 0.2s ease;
+        }
+
+        .back-link:hover {
+            background: white;
+            transform: translateY(-1px);
+        }
+
+        .badge {
+            font-size: 0.8rem;
+            padding: 4px 10px;
+            border-radius: 999px;
+            background: rgba(102, 126, 234, 0.1);
+            color: #4b53c1;
+            font-weight: 600;
+        }
+
+        h1 {
+            font-size: 2.4rem;
+            margin-bottom: 6px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-weight: 700;
+            text-align: left;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 24px;
+            font-size: 1rem;
+        }
+
+        .layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+            gap: 24px;
+            align-items: flex-start;
+        }
+
+        .game-section {
+            padding: 18px 18px 22px;
+            border-radius: 16px;
+            border: 1px solid #e0e3ff;
+            background: #f8f9ff;
+        }
+
+        .leaderboard-section {
+            padding: 18px 18px 22px;
+            border-radius: 16px;
+            border: 1px solid #e0e0f5;
+            background: #fdfdff;
+        }
+
+        .section-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: #444;
+        }
+
+        .game-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 120px);
+            grid-template-rows: repeat(2, 120px);
+            gap: 14px;
+            justify-content: center;
+            margin: 14px 0 18px;
+        }
+
+        .simon-btn {
+            border-radius: 18px;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+            transition: transform 0.1s ease, box-shadow 0.1s ease, filter 0.1s ease;
+        }
+
+        .simon-btn:active {
+            transform: translateY(1px);
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn-green { background: #2ecc71; }
+        .btn-red { background: #e74c3c; }
+        .btn-yellow { background: #f1c40f; }
+        .btn-blue { background: #3498db; }
+
+        .simon-btn.lit {
+            filter: brightness(1.5);
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.8);
+        }
+
+        .controls-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .primary-btn {
+            padding: 8px 20px;
+            border-radius: 999px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: white;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.5);
+            transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+        }
+
+        .primary-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .primary-btn:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 18px rgba(102, 126, 234, 0.6);
+        }
+
+        .score-info {
+            font-size: 0.95rem;
+            color: #555;
+        }
+
+        .score-info span {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .status {
+            margin-top: 10px;
+            font-size: 0.9rem;
+            color: #555;
+        }
+
+        .status.error {
+            color: #e74c3c;
+        }
+
+        .status.success {
+            color: #27ae60;
+        }
+
+        .leaderboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .player-id {
+            font-size: 0.8rem;
+            color: #999;
+        }
+
+        .leaderboard-list {
+            margin-top: 8px;
+            border-radius: 10px;
+            border: 1px solid #ececff;
+            max-height: 320px;
+            overflow-y: auto;
+            background: white;
+        }
+
+        .leaderboard-row {
+            display: grid;
+            grid-template-columns: 32px minmax(0, 1.4fr) 70px;
+            align-items: center;
+            font-size: 0.9rem;
+            padding: 7px 10px;
+            border-bottom: 1px solid #f2f2ff;
+        }
+
+        .leaderboard-row:nth-child(odd) {
+            background: #fafaff;
+        }
+
+        .leaderboard-row.me {
+            background: #eef5ff;
+            font-weight: 600;
+        }
+
+        .leaderboard-rank {
+            color: #666;
+        }
+
+        .leaderboard-name {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .leaderboard-score {
+            text-align: right;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .leaderboard-empty {
+            font-size: 0.9rem;
+            color: #888;
+            padding: 10px 12px;
+        }
+
+        .name-input-row {
+            margin-top: 8px;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .name-input-row input {
+            flex: 1;
+            padding: 6px 10px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            font-size: 0.9rem;
+        }
+
+        .name-input-row button {
+            padding: 6px 12px;
+            border-radius: 999px;
+            border: none;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            background: #ecf0ff;
+            color: #4b53c1;
+        }
+
+        @media (max-width: 900px) {
+            .layout {
+                grid-template-columns: 1fr;
+            }
+
+            h1 {
+                font-size: 2.1rem;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 24px 16px 32px;
+            }
+
+            .game-grid {
+                grid-template-columns: repeat(2, 100px);
+                grid-template-rows: repeat(2, 100px);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="top-bar">
+            <a href="index.html" class="back-link">
+                <span>←</span>
+                <span>Back to Home</span>
+            </a>
+            <span class="badge">Simon Says</span>
+        </div>
+
+        <h1>Simon Says Memory Game</h1>
+        <p class="subtitle">Watch the pattern, repeat it, and see how far your memory can go. Your best score is saved and shown in the global leaderboard.</p>
+
+        <div class="layout">
+            <section class="game-section">
+                <h2 class="section-title">Game</h2>
+
+                <div class="game-grid">
+                    <button class="simon-btn btn-green" data-index="0"></button>
+                    <button class="simon-btn btn-red" data-index="1"></button>
+                    <button class="simon-btn btn-yellow" data-index="2"></button>
+                    <button class="simon-btn btn-blue" data-index="3"></button>
+                </div>
+
+                <div class="controls-row">
+                    <button id="startButton" class="primary-btn">Start Game</button>
+                    <div class="score-info">
+                        Round: <span id="roundDisplay">0</span> ·
+                        Current score: <span id="scoreDisplay">0</span> ·
+                        Best score: <span id="bestScoreDisplay">0</span>
+                    </div>
+                </div>
+
+                <div id="gameStatus" class="status"></div>
+            </section>
+
+            <section class="leaderboard-section">
+                <div class="leaderboard-header">
+                    <h2 class="section-title" style="margin-bottom: 0;">Leaderboard</h2>
+                </div>
+                <div class="player-id" id="playerInfo"></div>
+
+                <div class="name-input-row" id="nameRow">
+                    <input type="text" id="playerNameInput" placeholder="Enter a name for the leaderboard (e.g., PikachuFan)">
+                    <button id="saveNameButton">Save</button>
+                </div>
+
+                <div id="leaderboard" class="leaderboard-list"></div>
+                <div id="leaderboardEmpty" class="leaderboard-empty" style="display: none;">
+                    No scores yet. Be the first to play!
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <!-- Firebase + Firestore + Game Logic -->
+    <script type="module">
+        // Firebase config (reusing your project settings from pokemon.html)
+        const firebaseConfig = {
+            apiKey: "AIzaSyCjus8Q-H1eyEshz3QZotirg_8A36nGNO8",
+            authDomain: "personalwebsite-darren.firebaseapp.com",
+            projectId: "personalwebsite-darren",
+            storageBucket: "personalwebsite-darren.firebasestorage.app",
+            messagingSenderId: "1008165403097",
+            appId: "1:1008165403097:web:bf7d0874f95fed918f01c8",
+            measurementId: "G-6GCEDT21LQ"
+        };
+
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import {
+            getFirestore,
+            collection,
+            addDoc,
+            onSnapshot,
+            query,
+            orderBy,
+            limit
+        } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Player identity using localStorage (could be mirrored to cookies if desired)
+        const PLAYER_ID_KEY = "simon_player_id";
+        const PLAYER_NAME_KEY = "simon_player_name";
+        const BEST_SCORE_KEY = "simon_best_score";
+
+        function generateId() {
+            return "player-" + Math.random().toString(36).substring(2, 10);
+        }
+
+        let playerId = localStorage.getItem(PLAYER_ID_KEY);
+        if (!playerId) {
+            playerId = generateId();
+            localStorage.setItem(PLAYER_ID_KEY, playerId);
+        }
+
+        let playerName = localStorage.getItem(PLAYER_NAME_KEY) || "";
+        let bestScore = Number(localStorage.getItem(BEST_SCORE_KEY) || 0);
+
+        const playerInfoEl = document.getElementById("playerInfo");
+        const playerNameInput = document.getElementById("playerNameInput");
+        const saveNameButton = document.getElementById("saveNameButton");
+        const nameRow = document.getElementById("nameRow");
+
+        function updatePlayerInfo() {
+            const shortId = playerId.slice(-4);
+            const nameText = playerName ? `Name: ${playerName}` : "Name: (set a name to appear on the leaderboard)";
+            playerInfoEl.textContent = `${nameText} · ID: …${shortId}`;
+            if (playerName) {
+                playerNameInput.value = playerName;
+            }
+        }
+
+        updatePlayerInfo();
+
+        saveNameButton.addEventListener("click", () => {
+            const name = playerNameInput.value.trim();
+            if (!name) return;
+            playerName = name;
+            localStorage.setItem(PLAYER_NAME_KEY, playerName);
+            updatePlayerInfo();
+        });
+
+        // Game logic
+        const buttons = Array.from(document.querySelectorAll(".simon-btn"));
+        const startButton = document.getElementById("startButton");
+        const roundDisplay = document.getElementById("roundDisplay");
+        const scoreDisplay = document.getElementById("scoreDisplay");
+        const bestScoreDisplay = document.getElementById("bestScoreDisplay");
+        const gameStatus = document.getElementById("gameStatus");
+
+        bestScoreDisplay.textContent = bestScore;
+
+        let sequence = [];
+        let playerIndex = 0;
+        let round = 0;
+        let currentScore = 0;
+        let isPlayingBack = false;
+        let acceptingInput = false;
+
+        function setStatus(message, type = "") {
+            gameStatus.textContent = message;
+            gameStatus.classList.remove("error", "success");
+            if (type) {
+                gameStatus.classList.add(type);
+            }
+        }
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        async function flashButton(index, speed = 500) {
+            const btn = buttons[index];
+            btn.classList.add("lit");
+            await sleep(speed * 0.6);
+            btn.classList.remove("lit");
+            await sleep(speed * 0.4);
+        }
+
+        async function playSequence() {
+            isPlayingBack = true;
+            acceptingInput = false;
+            startButton.disabled = true;
+            setStatus("Watch the sequence…");
+
+            const baseSpeed = Math.max(300, 700 - sequence.length * 20);
+            for (let i = 0; i < sequence.length; i++) {
+                await flashButton(sequence[i], baseSpeed);
+            }
+
+            isPlayingBack = false;
+            acceptingInput = true;
+            startButton.disabled = true;
+            setStatus("Your turn! Repeat the pattern.");
+        }
+
+        async function startGame() {
+            sequence = [];
+            playerIndex = 0;
+            round = 0;
+            currentScore = 0;
+            roundDisplay.textContent = "0";
+            scoreDisplay.textContent = "0";
+            setStatus("Starting game…");
+
+            await sleep(400);
+            nextRound();
+        }
+
+        function nextRound() {
+            round += 1;
+            playerIndex = 0;
+            sequence.push(Math.floor(Math.random() * 4));
+            roundDisplay.textContent = String(round);
+            playSequence();
+        }
+
+        async function handlePlayerInput(index) {
+            if (!acceptingInput || isPlayingBack) return;
+
+            flashButton(index, 200); // quick feedback (no await; visual only)
+
+            const expected = sequence[playerIndex];
+            if (index === expected) {
+                playerIndex += 1;
+                currentScore += 1;
+                scoreDisplay.textContent = String(currentScore);
+
+                if (playerIndex === sequence.length) {
+                    // Completed this round
+                    acceptingInput = false;
+                    setStatus("Nice! Get ready for the next round.", "success");
+                    setTimeout(() => {
+                        nextRound();
+                    }, 800);
+                }
+            } else {
+                // Game over
+                acceptingInput = false;
+                startButton.disabled = false;
+                setStatus(`Game over! You reached round ${round} (score: ${currentScore}).`, "error");
+                handleGameOverScore();
+            }
+        }
+
+        buttons.forEach(btn => {
+            btn.addEventListener("click", () => {
+                const idx = Number(btn.dataset.index);
+                handlePlayerInput(idx);
+            });
+        });
+
+        startButton.addEventListener("click", () => {
+            startGame();
+        });
+
+        async function handleGameOverScore() {
+            if (currentScore > bestScore) {
+                bestScore = currentScore;
+                localStorage.setItem(BEST_SCORE_KEY, String(bestScore));
+                bestScoreDisplay.textContent = String(bestScore);
+                await submitScore(bestScore);
+            } else {
+                // Still submit this score but best is tracked locally
+                await submitScore(currentScore);
+            }
+        }
+
+        // Leaderboard
+        const leaderboardEl = document.getElementById("leaderboard");
+        const leaderboardEmptyEl = document.getElementById("leaderboardEmpty");
+        const scoresCollection = collection(db, "simonScores");
+
+        async function submitScore(score) {
+            try {
+                await addDoc(scoresCollection, {
+                    playerId,
+                    name: playerName || null,
+                    score,
+                    createdAt: new Date()
+                });
+            } catch (err) {
+                console.error("Error submitting score:", err);
+            }
+        }
+
+        function renderLeaderboard(snapshot) {
+            leaderboardEl.innerHTML = "";
+
+            if (snapshot.empty) {
+                leaderboardEmptyEl.style.display = "block";
+                return;
+            }
+
+            leaderboardEmptyEl.style.display = "none";
+
+            let rank = 1;
+            snapshot.forEach(docSnap => {
+                const data = docSnap.data();
+                const row = document.createElement("div");
+                row.className = "leaderboard-row";
+                if (data.playerId === playerId) {
+                    row.classList.add("me");
+                }
+
+                const rankEl = document.createElement("div");
+                rankEl.className = "leaderboard-rank";
+                rankEl.textContent = `#${rank}`;
+
+                const nameEl = document.createElement("div");
+                nameEl.className = "leaderboard-name";
+                const displayName = data.name || ("Player …" + String(data.playerId || "").slice(-4));
+                nameEl.textContent = displayName;
+
+                const scoreEl = document.createElement("div");
+                scoreEl.className = "leaderboard-score";
+                scoreEl.textContent = data.score ?? 0;
+
+                row.appendChild(rankEl);
+                row.appendChild(nameEl);
+                row.appendChild(scoreEl);
+
+                leaderboardEl.appendChild(row);
+                rank += 1;
+            });
+        }
+
+        const scoresQuery = query(scoresCollection, orderBy("score", "desc"), orderBy("createdAt", "asc"), limit(20));
+        onSnapshot(scoresQuery, renderLeaderboard, (err) => {
+            console.error("Error loading leaderboard:", err);
+            leaderboardEmptyEl.style.display = "block";
+            leaderboardEmptyEl.textContent = "Error loading leaderboard.";
+        });
+    </script>
+</body>
+</html>
+
+
