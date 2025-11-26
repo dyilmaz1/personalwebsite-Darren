@@ -174,6 +174,27 @@
             border-color: #667eea;
         }
 
+        .method-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .method-label {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .method-option {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.95rem;
+            color: #444;
+        }
+
         .polynomial-input-container {
             display: none;
             flex-direction: column;
@@ -323,6 +344,22 @@
                 </div>
             </div>
 
+            <div class="method-container">
+                <span class="method-label">Method:</span>
+                <label class="method-option">
+                    <input type="radio" name="sumMethod" value="left" checked>
+                    Left
+                </label>
+                <label class="method-option">
+                    <input type="radio" name="sumMethod" value="right">
+                    Right
+                </label>
+                <label class="method-option">
+                    <input type="radio" name="sumMethod" value="trapezoidal">
+                    Trapezoidal
+                </label>
+            </div>
+
             <div class="slider-container">
                 <label class="slider-label">Number of Rectangles:</label>
                 <input type="range" id="rectanglesSlider" class="slider" min="0" max="1000" value="10">
@@ -336,6 +373,10 @@
 
         <div class="info">
             <p>Interval: [<span id="intervalDisplayStart">0</span>, <span id="intervalDisplayEnd">1</span>] | Approximate Area: <span id="areaValue">0.000</span></p>
+            <p style="margin-top: 8px; font-size: 0.9rem;">
+                A Riemann sum approximates the area under the curve by adding up the areas of many thin rectangles.
+                As the number of rectangles increases and their width gets smaller, this sum approaches the true value of the definite integral.
+            </p>
         </div>
 
         <a href="index.html" class="back-link">← Back to Home</a>
@@ -355,12 +396,14 @@
         const polynomialContainer = document.getElementById('polynomialContainer');
         const polynomialInput = document.getElementById('polynomialInput');
         const polynomialError = document.getElementById('polynomialError');
+        const methodRadios = document.querySelectorAll('input[name="sumMethod"]');
 
         let currentFunction = 'exp';
         let numRectangles = 10;
         let intervalStart = 0;
         let intervalEnd = 1;
         let customPolynomial = null;
+        let sumMethod = 'left';
 
         // Parse polynomial string into coefficients
         function parsePolynomial(polyStr) {
@@ -537,6 +580,16 @@
             intervalDisplayEnd.textContent = intervalEnd.toFixed(2);
         }
 
+        // Method selector
+        methodRadios.forEach(radio => {
+            radio.addEventListener('change', () => {
+                if (radio.checked) {
+                    sumMethod = radio.value;
+                    drawGraph();
+                }
+            });
+        });
+
         // Function selector
         functionButtons.forEach(btn => {
             btn.addEventListener('click', () => {
@@ -708,7 +761,7 @@
             }
             ctx.stroke();
 
-            // Draw rectangles for Riemann sum
+            // Draw rectangles / trapezoids for Riemann sum
             const dx = (b - a) / numRectangles;
             let totalArea = 0;
 
@@ -716,34 +769,60 @@
             ctx.strokeStyle = 'rgba(102, 126, 234, 0.6)';
             ctx.lineWidth = 1;
 
-            // Determine baseline for rectangles (y = 0 or bottom of graph)
+            // Determine baseline for area (y = 0 or bottom of graph)
             const baselineY = minY <= 0 && maxY >= 0 ? 0 : minY;
             const baselineCanvasY = height - padding - (baselineY - minY) * yScale;
 
-            for (let i = 0; i < numRectangles; i++) {
-                const x = a + i * dx;
-                const y = func(x); // Left Riemann sum
-                const rectWidth = dx * xScale;
-                
-                const canvasX = padding + (x - a) * xScale;
-                const yCanvasY = height - padding - (y - minY) * yScale;
-                
-                // Draw rectangle from baseline to function value
-                if (y >= baselineY) {
-                    // Rectangle above baseline
-                    const rectHeight = (y - baselineY) * yScale;
-                    // yCanvasY is above baselineCanvasY, so draw from yCanvasY (top) down
-                    ctx.fillRect(canvasX, yCanvasY, rectWidth, rectHeight);
-                    ctx.strokeRect(canvasX, yCanvasY, rectWidth, rectHeight);
-                } else {
-                    // Rectangle below baseline (negative area)
-                    // yCanvasY is below baselineCanvasY, so draw from baselineCanvasY down to yCanvasY
-                    const rectHeight = (baselineY - y) * yScale;
-                    ctx.fillRect(canvasX, baselineCanvasY, rectWidth, rectHeight);
-                    ctx.strokeRect(canvasX, baselineCanvasY, rectWidth, rectHeight);
-                }
+            if (sumMethod === 'trapezoidal') {
+                for (let i = 0; i < numRectangles; i++) {
+                    const x0 = a + i * dx;
+                    const x1 = a + (i + 1) * dx;
+                    const y0 = func(x0);
+                    const y1 = func(x1);
 
-                totalArea += (y - baselineY) * dx;
+                    const canvasX0 = padding + (x0 - a) * xScale;
+                    const canvasX1 = padding + (x1 - a) * xScale;
+                    const y0Canvas = height - padding - (y0 - minY) * yScale;
+                    const y1Canvas = height - padding - (y1 - minY) * yScale;
+
+                    // Draw filled trapezoid between baseline and the function values
+                    ctx.beginPath();
+                    ctx.moveTo(canvasX0, baselineCanvasY);
+                    ctx.lineTo(canvasX0, y0Canvas);
+                    ctx.lineTo(canvasX1, y1Canvas);
+                    ctx.lineTo(canvasX1, baselineCanvasY);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.stroke();
+
+                    totalArea += ((y0 - baselineY) + (y1 - baselineY)) * 0.5 * dx;
+                }
+            } else {
+                // Left or right Riemann sums
+                for (let i = 0; i < numRectangles; i++) {
+                    const sampleX = sumMethod === 'left'
+                        ? a + i * dx
+                        : a + (i + 1) * dx;
+
+                    const y = func(sampleX);
+                    const rectWidth = dx * xScale;
+
+                    const canvasX = padding + (sampleX - a) * xScale - (sumMethod === 'right' ? rectWidth : 0);
+                    const yCanvasY = height - padding - (y - minY) * yScale;
+
+                    // Draw rectangle from baseline to function value
+                    if (y >= baselineY) {
+                        const rectHeight = (y - baselineY) * yScale;
+                        ctx.fillRect(canvasX, yCanvasY, rectWidth, rectHeight);
+                        ctx.strokeRect(canvasX, yCanvasY, rectWidth, rectHeight);
+                    } else {
+                        const rectHeight = (baselineY - y) * yScale;
+                        ctx.fillRect(canvasX, baselineCanvasY, rectWidth, rectHeight);
+                        ctx.strokeRect(canvasX, baselineCanvasY, rectWidth, rectHeight);
+                    }
+
+                    totalArea += (y - baselineY) * dx;
+                }
             }
 
             // Update area display
